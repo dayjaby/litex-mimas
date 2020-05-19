@@ -55,13 +55,17 @@ class Platform(XilinxPlatform):
         raise NotImplementedError
 
 platform = Platform()
-led = platform.request("user_led")
-# Create our module (fpga description)
-module = Module()
+led0 = platform.request("user_led", 0)
+led1 = platform.request("user_led", 1)
+led2 = platform.request("user_led", 2)
 
-# Create a counter and blink a led
+module = Module()
 counter = Signal(26)
-module.comb += led.eq(counter[25])
+module.comb += [
+    led0.eq(counter[23]),
+    led1.eq(counter[24]),
+    led2.eq(counter[25])
+]
 module.sync += counter.eq(counter + 1)
 
 platform.build(module)
