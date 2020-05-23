@@ -15,13 +15,10 @@ class UARTModule(Module):
 
 
 if __name__ == '__main__':
-    dut = UARTModule(9600, 9600)
+    dut = UARTModule(100e6, 115200)
 
     def dut_tb(dut):
-        for x in dut.uart0._rxtx.write(0xFF):
-            yield x
-        yield
-        for i in range(1024):
-            yield
+        yield from dut.uart0._rxtx.write(0x01)
+        yield from [None] * 4096
 
     run_simulation(dut, dut_tb(dut), vcd_name="uart.vcd")
