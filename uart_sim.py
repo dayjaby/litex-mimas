@@ -6,12 +6,18 @@ from litex.soc.cores.uart import UARTPHY, UART, UARTPads
 class UARTModule(Module):
     def __init__(self, sys_clk_freq, baudrate):
 
-        self.submodules.uart0_phy = UARTPHY(UARTPads(), sys_clk_freq, baudrate=baudrate)
+        self.led = Signal()
+        pads = UARTPads()
+        self.submodules.uart0_phy = UARTPHY(pads, sys_clk_freq, baudrate=baudrate)
         self.submodules.uart0 = UART(
             phy=self.uart0_phy,
             tx_fifo_depth=16,
             rx_fifo_depth=16,
             phy_cd="sys")
+
+        self.comb += [
+            self.led.eq(pads.tx)
+        ]
 
 
 if __name__ == '__main__':

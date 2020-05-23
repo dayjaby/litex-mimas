@@ -4,7 +4,7 @@ wb = RemoteClient()
 wb.open()
 
 class UART:
-    def __init__(self, regs, name="uart"):
+    def __init__(self, regs, name="uart0"):
         self._txfull = getattr(regs, name + "_txfull")
         self._rxempty = getattr(regs, name + "_rxempty")
         self._rxtx = getattr(regs, name + "_rxtx")
@@ -16,8 +16,7 @@ class UART:
         return bool(self._rxempty.read())
 
     def write(self, c):
-        if self.txfull():
-            raise Exception("UART tx full")
+        self._rxtx.write(c)
 
     def read(self):
         return self._rxtx.read()
@@ -29,9 +28,8 @@ print(uart.txfull())
 print(uart.rxempty())
 for i in range(10):
     print(i)
-    uart.write('a')
-    print("TX:{}".format(wb.regs.uart_tx.read()))
-    print("RX:{}".format(wb.regs.uart_rx.read()))
+    #if not uart.txfull():
+    uart.write(0x76)
     if not uart.rxempty():
         print(uart.read())
 

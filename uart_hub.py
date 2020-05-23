@@ -6,7 +6,7 @@ from litex.build.xilinx import XilinxPlatform
 from litex.soc.integration.soc_core import SoCMini
 from litex.soc.integration.builder import Builder
 from litex.soc.cores.uart import UARTWishboneBridge
-from litex.soc.cores.uart import UARTPHY, UART
+from litex.soc.cores.uart import UARTPHY, UART, UARTPads
 from litex.soc.cores.spi import SPIMaster
 
 
@@ -24,10 +24,11 @@ _io = [
         Subsignal("mosi", Pins("P64"), IOStandard("LVCMOS33")), # SDO - IO_L3N_MOSI_CSI_B_MISO0_2
         Subsignal("miso", Pins("P65"), IOStandard("LVCMOS33"))  # SDI - IO_L3P_D0_DIN_MISO_MISO1_2
     ),
-    (("uart0", 0,
-        Subsignal("tx", Pins("P100"), IOStandard("LVCMOS33")), # GPIO-P21
-        Subsignal("rx", Pins("P102"), IOStandard("LVCMOS33"))  # GPIO-P20
-    )),
+    ("uart0", 0,
+        Subsignal("tx", Pins("P100"), IOStandard("LVCMOS33"), # GPIO-P21
+                  Misc("SLEW=FAST")),
+        Subsignal("rx", Pins("P102"), IOStandard("LVCMOS33"),  # GPIO-P20
+                  Misc("SLEW=FAST"))),
 
     ("user_btn", 0, Pins("P124"), IOStandard("LVCMOS33"), Misc("PULLUP")),
     ("user_btn", 1, Pins("P123"), IOStandard("LVCMOS33"), Misc("PULLUP")),
@@ -67,35 +68,20 @@ class BaseSoC(SoCMini):
 
         self.submodules.crg = CRG(platform.request("clk100"), ~platform.request("user_btn", 0))
 
-        self.submodules.serial_bridge = UARTWishboneBridge(platform.request("serial", 0), sys_clk_freq)
+        serial = platform.request("serial", 0)
+        self.submodules.serial_bridge = UARTWishboneBridge(serial, sys_clk_freq)
         self.add_wb_master(self.serial_bridge.wishbone)
 
-        self.submodules.spiflash = SPIMaster(platform.request("spiflash"),
-            data_width   = 32,
-            sys_clk_freq = sys_clk_freq,
-            spi_clk_freq = 1e6)
-        self.add_csr("spiflash")
-
-        self.add_uart("uart0")
-        """uart0 = platform.request("uart0", 0)
-        self.submodules.uart0_phy = UARTPHY(uart0, sys_clk_freq, baudrate=9600)
-        self.submodules.uart0 = UART(
+        self.submodules.uart0_phy = UARTPHY(platform.request("uart0", 0), sys_clk_freq, baudrate=9600)
+        self.submodules.uart0 = ResetInserter()(UART(
             phy=self.uart0_phy,
             tx_fifo_depth=16,
             rx_fifo_depth=16,
-            phy_cd="sys")
+            phy_cd="sys"))
+        self.add_constant("UART_POLLING")
 
         self.add_csr("uart0_phy")
-        self.add_csr("uart0")"""
-
-        btn1 = platform.request("user_btn", 1)
-        led6 = platform.request("user_led", 6)
-        led7 = platform.request("user_led", 7)
-        led0 = platform.request("user_led", 0) 
-        # led8 seems to be wrong?
-        self.comb += [
-            led0.eq(btn1)
-        ]
+        self.add_csr("uart0")
 
 soc = BaseSoC(platform)
 
