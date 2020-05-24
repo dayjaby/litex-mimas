@@ -1,6 +1,6 @@
 from litex import RemoteClient
 
-wb = RemoteClient()
+wb = RemoteClient(debug=True)
 wb.open()
 
 class UART:
@@ -24,13 +24,12 @@ class UART:
 
 
 uart = UART(wb.regs)
-print(uart.txfull())
-print(uart.rxempty())
+print("TX Full: {}".format(uart.txfull()))
+print("RX Empty: {}".format(uart.rxempty()))
 for i in range(10):
-    print(i)
     #if not uart.txfull():
     uart.write(0x76)
-    if not uart.rxempty():
-        print(uart.read())
+    #if not uart.rxempty():
+    #    print(uart.read())
 
 wb.close()

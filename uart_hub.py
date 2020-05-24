@@ -21,6 +21,8 @@ _io = [
                   Misc("SLEW=FAST")),
         Subsignal("rx", Pins("P102"), IOStandard("LVCMOS33"),  # GPIO-P20
                   Misc("SLEW=FAST"))),
+
+    ("user_btn", 0, Pins("P124"), IOStandard("LVCMOS33"), Misc("PULLUP")),
 ]
 
 class Platform(XilinxPlatform):
@@ -39,17 +41,21 @@ class BaseSoC(SoCMini):
         SoCMini.__init__(self, platform, sys_clk_freq, csr_data_width=32,
             ident="My first LiteX System On Chip", ident_version=True)
 
+        self.submodules.crg = CRG(platform.request("clk100"), ~platform.request("user_btn", 0))
+
         serial = platform.request("serial", 0)
         self.submodules.serial_bridge = UARTWishboneBridge(serial, sys_clk_freq)
         self.add_wb_master(self.serial_bridge.wishbone)
 
+        self.submodules.uart0_phy = UARTPHY(platform.request("uart0", 0), sys_clk_freq, baudrate=9600)
         self.submodules.uart0 = ResetInserter()(UART(
-            phy=UARTPHY(platform.request("uart0", 0), sys_clk_freq, baudrate=9600),
+            phy=self.uart0_phy,
             tx_fifo_depth=16,
             rx_fifo_depth=16,
             phy_cd="sys"))
         self.add_constant("UART_POLLING")
 
+        self.add_csr("uart0_phy")
         self.add_csr("uart0")
 
 soc = BaseSoC(platform)
