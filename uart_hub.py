@@ -55,57 +55,34 @@ platform = Platform()
 
 class BaseSoC(SoCMini):
     def __init__(self, platform, **kwargs):
-        sys_clk_freq = int(100e6)
-        SoCMini.__init__(self, platform, sys_clk_freq, csr_data_width=32,
+        self.sys_clk_freq = int(100e6)
+        SoCMini.__init__(self, platform, self.sys_clk_freq, csr_data_width=32,
             ident="My first LiteX System On Chip", ident_version=True)
 
         self.submodules.crg = CRG(platform.request("clk100"), ~platform.request("user_btn", 0))
 
         serial = platform.request("serial", 0)
-        self.submodules.serial_bridge = UARTWishboneBridge(serial, sys_clk_freq)
+        self.submodules.serial_bridge = UARTWishboneBridge(serial, self.sys_clk_freq)
         self.add_wb_master(self.serial_bridge.wishbone)
 
-        self.submodules.uart0_phy = UARTPHY(platform.request("uart0", 0), sys_clk_freq, baudrate=57600)
-        self.submodules.uart0 = ResetInserter()(UART(
-            phy=self.uart0_phy,
-            tx_fifo_depth=16,
-            rx_fifo_depth=16,
-            phy_cd="sys"))
-
-        self.add_csr("uart0_phy")
-        self.add_csr("uart0")
-
-        self.submodules.uart1_phy = UARTPHY(platform.request("uart1", 0), sys_clk_freq, baudrate=115200)
-        self.submodules.uart1 = ResetInserter()(UART(
-            phy=self.uart1_phy,
-            tx_fifo_depth=16,
-            rx_fifo_depth=16,
-            phy_cd="sys"))
-
-        self.add_csr("uart1_phy")
-        self.add_csr("uart1")
-
-        self.submodules.uart2_phy = UARTPHY(platform.request("uart2", 0), sys_clk_freq, baudrate=230400)
-        self.submodules.uart2 = ResetInserter()(UART(
-            phy=self.uart2_phy,
-            tx_fifo_depth=16,
-            rx_fifo_depth=16,
-            phy_cd="sys"))
-
-        self.add_csr("uart2_phy")
-        self.add_csr("uart2")
-
-        self.submodules.uart3_phy = UARTPHY(platform.request("uart3", 0), sys_clk_freq, baudrate=460800)
-        self.submodules.uart3 = ResetInserter()(UART(
-            phy=self.uart3_phy,
-            tx_fifo_depth=16,
-            rx_fifo_depth=16,
-            phy_cd="sys"))
-
-        self.add_csr("uart3_phy")
-        self.add_csr("uart3")
-
+        self.add_uart("uart0", 115200)
+        self.add_uart("uart1", 115200)
+        self.add_uart("uart2", 230400)
+        self.add_uart("uart3", 230400)
         self.add_constant("UART_POLLING")
+
+    def add_uart(self, name, baudrate):
+        phy = UARTPHY(platform.request(name, 0), self.sys_clk_freq, baudrate=baudrate)
+        mod = ResetInserter()(UART(
+            phy=phy,
+            tx_fifo_depth=16,
+            rx_fifo_depth=16,
+            phy_cd="sys"))
+        setattr(self.submodules, f"{name}_phy", phy)
+        setattr(self.submodules, name, mod)
+        self.add_csr(f"{name}_phy")
+        self.add_csr(name)
+
 soc = BaseSoC(platform)
 
 builder = Builder(soc, output_dir="build", csr_csv="csr.csv")

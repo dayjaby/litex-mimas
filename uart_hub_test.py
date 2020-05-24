@@ -28,15 +28,15 @@ uart0.write(0x76)
 uart0.read()
 
 uart1 = UART(wb.regs, "uart1")
-uart1.write(0x87)
+uart1.write(0x76)
 uart1.read()
 
 uart2 = UART(wb.regs, "uart2")
-uart2.write(0x98)
+uart2.write(0x76)
 uart2.read()
 
 uart3 = UART(wb.regs, "uart3")
-uart3.write(0xA9)
+uart3.write(0x76)
 uart3.read()
 
 wb.close()
