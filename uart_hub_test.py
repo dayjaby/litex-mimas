@@ -24,19 +24,19 @@ class UART:
 
 
 uart0 = UART(wb.regs, "uart0")
-for i in range(5):
-    uart0.write(0x76)
+uart0.write(0x76)
+uart0.read()
 
 uart1 = UART(wb.regs, "uart1")
 uart1.write(0x87)
-print(uart1.read())
+uart1.read()
 
 uart2 = UART(wb.regs, "uart2")
 uart2.write(0x98)
-print(uart2.read())
+uart2.read()
 
 uart3 = UART(wb.regs, "uart3")
 uart3.write(0xA9)
-print(uart3.read())
+uart3.read()
 
 wb.close()
