@@ -1,10 +1,10 @@
 from litex import RemoteClient
 
-wb = RemoteClient()
+wb = RemoteClient(debug=True)
 wb.open()
 
 class UART:
-    def __init__(self, regs, name="uart0"):
+    def __init__(self, regs, name):
         self._txfull = getattr(regs, name + "_txfull")
         self._rxempty = getattr(regs, name + "_rxempty")
         self._rxtx = getattr(regs, name + "_rxtx")
@@ -23,11 +23,20 @@ class UART:
             
 
 
-uart = UART(wb.regs)
-for i in range(10):
-    #if not uart.txfull():
-    uart.write(0x76)
-    #if not uart.rxempty():
-    #    print(uart.read())
+uart0 = UART(wb.regs, "uart0")
+for i in range(5):
+    uart0.write(0x76)
+
+uart1 = UART(wb.regs, "uart1")
+uart1.write(0x87)
+print(uart1.read())
+
+uart2 = UART(wb.regs, "uart2")
+uart2.write(0x98)
+print(uart2.read())
+
+uart3 = UART(wb.regs, "uart3")
+uart3.write(0xA9)
+print(uart3.read())
 
 wb.close()
