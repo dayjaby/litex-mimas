@@ -1,53 +1,26 @@
 from migen import *
-# from litex.soc.cores.spi_flash import SPIFlash
 from litex.build.generic_platform import *
 from litex.build.xilinx import XilinxPlatform
 
 from litex.soc.integration.soc_core import SoCMini
 from litex.soc.integration.builder import Builder
 from litex.soc.cores.uart import UARTWishboneBridge
-from litex.soc.cores.uart import UARTPHY, UART, UARTPads
-from litex.soc.cores.spi import SPIMaster
-
+from litex.soc.cores.uart import UARTPHY, UART
 
 _io = [
     ("clk100", 0, Pins("P126"), IOStandard("LVCMOS33")),
 
+    # for WishboneUARTBridge
     ("serial", 0,
         Subsignal("tx", Pins("P104"), IOStandard("LVCMOS33"), # GPIO-N21
                   Misc("SLEW=FAST")),
         Subsignal("rx", Pins("P101"), IOStandard("LVCMOS33"),  # GPIO-N20
                   Misc("SLEW=FAST"))),
-    ("spiflash", 0,
-        Subsignal("cs_n", Pins("P38"), IOStandard("LVCMOS33")), # SCS - IO_L65N_CSO_B_2
-        Subsignal("clk",  Pins("P70"), IOStandard("LVCMOS33")), # SCK - IO_L1P_CCLK_2
-        Subsignal("mosi", Pins("P64"), IOStandard("LVCMOS33")), # SDO - IO_L3N_MOSI_CSI_B_MISO0_2
-        Subsignal("miso", Pins("P65"), IOStandard("LVCMOS33"))  # SDI - IO_L3P_D0_DIN_MISO_MISO1_2
-    ),
     ("uart0", 0,
         Subsignal("tx", Pins("P100"), IOStandard("LVCMOS33"), # GPIO-P21
                   Misc("SLEW=FAST")),
         Subsignal("rx", Pins("P102"), IOStandard("LVCMOS33"),  # GPIO-P20
                   Misc("SLEW=FAST"))),
-
-    ("user_btn", 0, Pins("P124"), IOStandard("LVCMOS33"), Misc("PULLUP")),
-    ("user_btn", 1, Pins("P123"), IOStandard("LVCMOS33"), Misc("PULLUP")),
-    ("user_btn", 2, Pins("P121"), IOStandard("LVCMOS33"), Misc("PULLUP")),
-    ("user_btn", 3, Pins("P120"), IOStandard("LVCMOS33"), Misc("PULLUP")),
-    ("user_btn", 4, Pins("P73"), IOStandard("LVCMOS33"), Misc("PULLUP")),
-
-    ("user_led", 0, Pins("P119"), IOStandard("LVCMOS33"), Drive(8)),
-    ("user_led", 1, Pins("P118"), IOStandard("LVCMOS33"), Drive(8)),
-    ("user_led", 2, Pins("P117"), IOStandard("LVCMOS33"), Drive(8)),
-    ("user_led", 3, Pins("P116"), IOStandard("LVCMOS33"), Drive(8)),
-    ("user_led", 4, Pins("P115"), IOStandard("LVCMOS33"), Drive(8)),
-    ("user_led", 5, Pins("P114"), IOStandard("LVCMOS33"), Drive(8)),
-    ("user_led", 6, Pins("P112"), IOStandard("LVCMOS33"), Drive(8)),
-    ("user_led", 7, Pins("P111"), IOStandard("LVCMOS33"), Drive(8)),
-    ("user_led", 8, Pins("P99"), IOStandard("LVCMOS33"), Drive(8)), # GPIO-N35
-    #("user_led", 9, Pins("P100"), IOStandard("LVCMOS33"), Drive(8)),
-    #("user_led", 10, Pins("P102"), IOStandard("LVCMOS33"), Drive(8)),
-
 ]
 
 class Platform(XilinxPlatform):
@@ -66,25 +39,20 @@ class BaseSoC(SoCMini):
         SoCMini.__init__(self, platform, sys_clk_freq, csr_data_width=32,
             ident="My first LiteX System On Chip", ident_version=True)
 
-        self.submodules.crg = CRG(platform.request("clk100"), ~platform.request("user_btn", 0))
-
         serial = platform.request("serial", 0)
         self.submodules.serial_bridge = UARTWishboneBridge(serial, sys_clk_freq)
         self.add_wb_master(self.serial_bridge.wishbone)
 
-        self.submodules.uart0_phy = UARTPHY(platform.request("uart0", 0), sys_clk_freq, baudrate=9600)
         self.submodules.uart0 = ResetInserter()(UART(
-            phy=self.uart0_phy,
+            phy=UARTPHY(platform.request("uart0", 0), sys_clk_freq, baudrate=9600),
             tx_fifo_depth=16,
             rx_fifo_depth=16,
             phy_cd="sys"))
         self.add_constant("UART_POLLING")
 
-        self.add_csr("uart0_phy")
         self.add_csr("uart0")
 
 soc = BaseSoC(platform)
 
 builder = Builder(soc, output_dir="build", csr_csv="csr.csv")
 builder.build(build_name="top")
-# platform.build(module)
